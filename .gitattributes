@@ -1,0 +1,17 @@
+# Enforce LF line endings for text files (prevents Windows CRLF conversion)
+* text=auto eol=lf
+
+# Explicitly text files - never treat as binary
+*.go    text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf
+*.json  text eol=lf
+*.md    text eol=lf
+*.mod   text eol=lf
+*.sum   text eol=lf
+*.sh    text eol=lf
+
+# Explicitly binary files
+*.png   binary
+*.jpg   binary
+*.ico   binary
