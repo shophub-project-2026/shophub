@@ -4,6 +4,8 @@ package auth_test
 
 import (
 	"context"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -40,12 +42,16 @@ func startPostgres(t *testing.T) *pgxpool.Pool {
 	}
 	t.Cleanup(func() { _ = container.Terminate(ctx) })
 
-	host, _ := container.Host(ctx)
-	port, _ := container.MappedPort(ctx, "5432")
+	endpoint, err := container.PortEndpoint(ctx, "5432/tcp", "")
+	if err != nil {
+		t.Fatalf("get port endpoint: %v", err)
+	}
+	host, portStr, _ := strings.Cut(endpoint, ":")
+	portNum, _ := strconv.Atoi(portStr)
 
 	cfg := db.Config{
 		Host:     host,
-		Port:     port.Int(),
+		Port:     portNum,
 		Name:     "testdb",
 		User:     "test",
 		Password: "test",
