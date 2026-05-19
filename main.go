@@ -11,14 +11,43 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/shophub-project-2026/shophub/internal/auth"
 	"github.com/shophub-project-2026/shophub/internal/config"
+	"github.com/shophub-project-2026/shophub/internal/db"
 	"github.com/shophub-project-2026/shophub/internal/server"
+	"github.com/shophub-project-2026/shophub/internal/server/middleware"
 )
 
 func main() {
 	cfg := config.Load()
 
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	pool, err := db.Connect(ctx, cfg.DB)
+	if err != nil {
+		slog.Error("connect to database", "err", err)
+		os.Exit(1)
+	}
+	defer pool.Close()
+
+	if err := db.Migrate(ctx, pool); err != nil {
+		slog.Error("run migrations", "err", err)
+		os.Exit(1)
+	}
+
+	authRepo := auth.NewRepository(pool)
+	authSvc := auth.NewService(authRepo, cfg.JWTSecret)
+	authHandler := auth.NewHandler(authSvc)
+
+	jwtMiddleware := middleware.JWT(authSvc.TokenParserFn())
+
 	srv := server.New(cfg.HTTPAddr, cfg.HTTPPort)
+
+	srv.HandleFunc("POST /auth/register", authHandler.Register)
+	srv.HandleFunc("POST /auth/login", authHandler.Login)
+
+	_ = jwtMiddleware
 
 	go func() {
 		addr := fmt.Sprintf("%s:%d", cfg.HTTPAddr, cfg.HTTPPort)
@@ -29,15 +58,13 @@ func main() {
 		}
 	}()
 
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
-	<-quit
+	<-ctx.Done()
 
 	slog.Info("shutting down server")
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	if err := srv.Shutdown(ctx); err != nil {
+	if err := srv.Shutdown(shutdownCtx); err != nil {
 		slog.Error("graceful shutdown failed", "err", err)
 		os.Exit(1)
 	}
