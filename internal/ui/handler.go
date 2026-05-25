@@ -70,6 +70,53 @@ func (h *Handler) RegisterPost(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/login", http.StatusSeeOther)
 }
 
+func (h *Handler) ShopEdit(w http.ResponseWriter, r *http.Request) {
+	userID, _ := uuid.Parse(middleware.UserIDFromCtx(r.Context()))
+	name := r.PathValue("name")
+
+	list, err := h.shopsRepo.List(r.Context(), userID)
+	if err != nil {
+		http.Error(w, "failed to load shop", http.StatusInternalServerError)
+		return
+	}
+	var found *shops.ShopView
+	for i := range list {
+		if list[i].Name == name {
+			found = &list[i]
+			break
+		}
+	}
+	if found == nil {
+		http.NotFound(w, r)
+		return
+	}
+	h.render(w, "shop_edit.html", map[string]any{
+		"Email": middleware.EmailFromCtx(r.Context()),
+		"Shop":  *found,
+	})
+}
+
+func (h *Handler) ShopEditPost(w http.ResponseWriter, r *http.Request) {
+	userID, _ := uuid.Parse(middleware.UserIDFromCtx(r.Context()))
+	name := r.PathValue("name")
+
+	availability := r.FormValue("availability")
+	walletAddress := r.FormValue("walletAddress")
+
+	if _, err := h.shopsRepo.Update(r.Context(), userID, name, shops.UpdateInput{
+		Availability:  &availability,
+		WalletAddress: &walletAddress,
+	}); err != nil {
+		h.render(w, "shop_edit.html", map[string]any{
+			"Email": middleware.EmailFromCtx(r.Context()),
+			"Shop":  shops.ShopView{Name: name, Availability: availability, WalletAddress: walletAddress},
+			"Error": "Failed to update shop: " + err.Error(),
+		})
+		return
+	}
+	http.Redirect(w, r, "/shops/"+name, http.StatusSeeOther)
+}
+
 func (h *Handler) ShopDetail(w http.ResponseWriter, r *http.Request) {
 	userID, _ := uuid.Parse(middleware.UserIDFromCtx(r.Context()))
 	name := r.PathValue("name")
