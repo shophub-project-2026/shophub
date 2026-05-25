@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ShopHub — New Shop</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-gray-50">
+  {{template "nav" .}}
+  <main class="max-w-2xl mx-auto px-6 py-8">
+    <div class="mb-6">
+      <a href="/dashboard" class="text-sm text-gray-500 hover:text-indigo-600 flex items-center gap-1 mb-4">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+        </svg>
+        Back to dashboard
+      </a>
+      <h1 class="text-xl font-bold text-gray-900">Create a new shop</h1>
+      <p class="text-sm text-gray-500 mt-0.5">This will provision a new Kubernetes Shop CRD</p>
+    </div>
+
+    <div class="bg-white rounded-xl border border-gray-100 p-6">
+      {{if .Error}}
+      <div class="bg-red-50 border border-red-100 text-red-600 rounded-lg px-4 py-3 mb-5 text-sm">{{.Error}}</div>
+      {{end}}
+      <form method="POST" action="/shops/new" class="space-y-5">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Shop name</label>
+          <input type="text" name="name" required placeholder="my-shop"
+            pattern="[a-z0-9][a-z0-9\-]{1,61}[a-z0-9]"
+            title="Lowercase letters, numbers and hyphens only"
+            class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+          <p class="text-xs text-gray-400 mt-1">Lowercase letters, numbers and hyphens. Used as the Kubernetes resource name.</p>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Wallet address</label>
+          <input type="text" name="walletAddress" required placeholder="0x..."
+            class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+          <p class="text-xs text-gray-400 mt-1">Ethereum wallet address for receiving payments.</p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Availability</label>
+            <select name="availability"
+              class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white">
+              <option value="standard">Standard</option>
+              <option value="premium">Premium</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Database tier</label>
+            <select name="database"
+              class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white">
+              <option value="standard">Standard</option>
+              <option value="premium">Premium</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex gap-3 pt-2">
+          <button type="submit"
+            class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-5 py-2 rounded-lg text-sm transition-colors">
+            Create shop
+          </button>
+          <a href="/dashboard"
+            class="text-gray-600 hover:text-gray-800 font-medium px-5 py-2 rounded-lg text-sm border border-gray-200 hover:border-gray-300 transition-colors">
+            Cancel
+          </a>
+        </div>
+      </form>
+    </div>
+  </main>
+</body>
+</html>
