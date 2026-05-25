@@ -8,10 +8,11 @@ import (
 )
 
 type Config struct {
-	HTTPAddr  string
-	HTTPPort  int
-	DB        db.Config
-	JWTSecret string
+	HTTPAddr   string
+	HTTPPort   int
+	DB         db.Config
+	JWTSecret  string
+	KubeConfig string
 }
 
 func Load() Config {
@@ -34,6 +35,7 @@ func Load() Config {
 			User:     getEnv("SHOPHUB_DB_USER", "shophub_user"),
 			Password: getEnv("SHOPHUB_DB_PASSWORD", "shophub_password"),
 		},
+		KubeConfig: getEnv("SHOPHUB_KUBECONFIG", ""),
 	}
 }
 

@@ -11,11 +11,18 @@ import (
 	"syscall"
 	"time"
 
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/shophub-project-2026/shophub/internal/auth"
 	"github.com/shophub-project-2026/shophub/internal/config"
 	"github.com/shophub-project-2026/shophub/internal/db"
 	"github.com/shophub-project-2026/shophub/internal/server"
 	"github.com/shophub-project-2026/shophub/internal/server/middleware"
+	"github.com/shophub-project-2026/shophub/internal/shops"
 )
 
 func main() {
@@ -36,18 +43,47 @@ func main() {
 		os.Exit(1)
 	}
 
+	scheme := runtime.NewScheme()
+	if err := shops.AddToScheme(scheme); err != nil {
+		slog.Error("register k8s scheme", "err", err)
+		os.Exit(1)
+	}
+
+	var restCfg *rest.Config
+	if cfg.KubeConfig != "" {
+		restCfg, err = clientcmd.BuildConfigFromFlags("", cfg.KubeConfig)
+	} else {
+		restCfg, err = ctrl.GetConfig()
+	}
+	if err != nil {
+		slog.Error("build k8s config", "err", err)
+		os.Exit(1)
+	}
+
+	k8sClient, err := client.New(restCfg, client.Options{Scheme: scheme})
+	if err != nil {
+		slog.Error("create k8s client", "err", err)
+		os.Exit(1)
+	}
+
 	authRepo := auth.NewRepository(pool)
 	authSvc := auth.NewService(authRepo, cfg.JWTSecret)
 	authHandler := auth.NewHandler(authSvc)
 
 	jwtMiddleware := middleware.JWT(authSvc.TokenParserFn())
 
+	shopsRepo := shops.NewRepository(k8sClient, pool)
+	shopsHandler := shops.NewHandler(shopsRepo)
+
 	srv := server.New(cfg.HTTPAddr, cfg.HTTPPort)
 
 	srv.HandleFunc("POST /auth/register", authHandler.Register)
 	srv.HandleFunc("POST /auth/login", authHandler.Login)
 
-	_ = jwtMiddleware
+	srv.Handle("GET /shops", jwtMiddleware(http.HandlerFunc(shopsHandler.List)))
+	srv.Handle("POST /shops", jwtMiddleware(http.HandlerFunc(shopsHandler.Create)))
+	srv.Handle("PUT /shops/{name}", jwtMiddleware(http.HandlerFunc(shopsHandler.Update)))
+	srv.Handle("DELETE /shops/{name}", jwtMiddleware(http.HandlerFunc(shopsHandler.Delete)))
 
 	go func() {
 		addr := fmt.Sprintf("%s:%d", cfg.HTTPAddr, cfg.HTTPPort)
