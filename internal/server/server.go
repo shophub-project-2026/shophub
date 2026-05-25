@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/shophub-project-2026/shophub/internal/metrics"
 	"github.com/shophub-project-2026/shophub/internal/server/middleware"
 )
 
@@ -18,11 +20,12 @@ func New(addr string, port int) *Server {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", healthz)
 	mux.HandleFunc("GET /readyz", readyz)
+	mux.Handle("GET /metrics", promhttp.Handler())
 
 	s := &Server{mux: mux}
 	s.httpServer = &http.Server{
 		Addr:         fmt.Sprintf("%s:%d", addr, port),
-		Handler:      middleware.Logging(mux),
+		Handler:      metrics.Middleware(middleware.Logging(mux)),
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
 		IdleTimeout:  60 * time.Second,

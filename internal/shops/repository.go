@@ -10,6 +10,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/shophub-project-2026/shophub/internal/metrics"
 )
 
 var ErrNotFound = errors.New("shop not found")
@@ -49,9 +51,11 @@ func (r *k8sRepository) List(ctx context.Context, userID uuid.UUID) ([]ShopView,
 		shop := &Shop{}
 		err := r.k8s.Get(ctx, types.NamespacedName{Name: name, Namespace: ns}, shop)
 		if err != nil {
+			metrics.K8sOperationsTotal.WithLabelValues("get", "error").Inc()
 			views = append(views, ShopView{Name: name, Namespace: ns, Phase: "Unknown"})
 			continue
 		}
+		metrics.K8sOperationsTotal.WithLabelValues("get", "success").Inc()
 		views = append(views, toView(shop))
 	}
 	return views, nil
@@ -85,8 +89,10 @@ func (r *k8sRepository) Create(ctx context.Context, userID uuid.UUID, in CreateI
 	}
 
 	if err := r.k8s.Create(ctx, shop); err != nil {
+		metrics.K8sOperationsTotal.WithLabelValues("create", "error").Inc()
 		return nil, fmt.Errorf("create Shop CRD: %w", err)
 	}
+	metrics.K8sOperationsTotal.WithLabelValues("create", "success").Inc()
 
 	_, err := r.pool.Exec(ctx,
 		`INSERT INTO user_shops (user_id, shop_name, shop_namespace) VALUES ($1, $2, $3)`,
@@ -108,8 +114,10 @@ func (r *k8sRepository) Update(ctx context.Context, userID uuid.UUID, name strin
 
 	shop := &Shop{}
 	if err := r.k8s.Get(ctx, types.NamespacedName{Name: name, Namespace: ns}, shop); err != nil {
+		metrics.K8sOperationsTotal.WithLabelValues("get", "error").Inc()
 		return nil, ErrNotFound
 	}
+	metrics.K8sOperationsTotal.WithLabelValues("get", "success").Inc()
 
 	if in.Availability != nil {
 		shop.Spec.Availability = *in.Availability
@@ -119,8 +127,10 @@ func (r *k8sRepository) Update(ctx context.Context, userID uuid.UUID, name strin
 	}
 
 	if err := r.k8s.Update(ctx, shop); err != nil {
+		metrics.K8sOperationsTotal.WithLabelValues("update", "error").Inc()
 		return nil, fmt.Errorf("update Shop CRD: %w", err)
 	}
+	metrics.K8sOperationsTotal.WithLabelValues("update", "success").Inc()
 
 	view := toView(shop)
 	return &view, nil
@@ -134,12 +144,16 @@ func (r *k8sRepository) Delete(ctx context.Context, userID uuid.UUID, name strin
 
 	shop := &Shop{}
 	if err := r.k8s.Get(ctx, types.NamespacedName{Name: name, Namespace: ns}, shop); err != nil {
+		metrics.K8sOperationsTotal.WithLabelValues("get", "error").Inc()
 		return ErrNotFound
 	}
+	metrics.K8sOperationsTotal.WithLabelValues("get", "success").Inc()
 
 	if err := r.k8s.Delete(ctx, shop); err != nil {
+		metrics.K8sOperationsTotal.WithLabelValues("delete", "error").Inc()
 		return fmt.Errorf("delete Shop CRD: %w", err)
 	}
+	metrics.K8sOperationsTotal.WithLabelValues("delete", "success").Inc()
 
 	_, _ = r.pool.Exec(ctx,
 		`DELETE FROM user_shops WHERE user_id = $1 AND shop_name = $2 AND shop_namespace = $3`,
