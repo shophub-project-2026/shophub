@@ -43,6 +43,31 @@ func UserIDFromCtx(ctx context.Context) string {
 	return v
 }
 
+func EmailFromCtx(ctx context.Context) string {
+	v, _ := ctx.Value(ContextUserEmail).(string)
+	return v
+}
+
+func JWTOrRedirect(parse ParseTokenFn, loginURL string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			token := tokenFromRequest(r)
+			if token == "" {
+				http.Redirect(w, r, loginURL, http.StatusSeeOther)
+				return
+			}
+			userID, email, err := parse(token)
+			if err != nil {
+				http.Redirect(w, r, loginURL, http.StatusSeeOther)
+				return
+			}
+			ctx := context.WithValue(r.Context(), ContextUserID, userID)
+			ctx = context.WithValue(ctx, ContextUserEmail, email)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
+}
+
 func tokenFromRequest(r *http.Request) string {
 	if cookie, err := r.Cookie("token"); err == nil {
 		return cookie.Value

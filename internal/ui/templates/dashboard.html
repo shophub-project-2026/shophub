@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ShopHub — Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-gray-50">
+  {{template "nav" .}}
+  <main class="max-w-5xl mx-auto px-6 py-8">
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h1 class="text-xl font-bold text-gray-900">Your Shops</h1>
+        <p class="text-sm text-gray-500 mt-0.5">Manage your Kubernetes-deployed stores</p>
+      </div>
+      <a href="/shops/new"
+        class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+        New Shop
+      </a>
+    </div>
+
+    {{if .Shops}}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {{range .Shops}}
+      <a href="/shops/{{.Name}}"
+        class="bg-white rounded-xl border border-gray-100 p-5 hover:shadow-sm hover:border-indigo-100 transition-all block">
+        <div class="flex items-start justify-between mb-3">
+          <h2 class="font-semibold text-gray-900 truncate mr-2">{{.Name}}</h2>
+          {{template "phasebadge" .Phase}}
+        </div>
+        <dl class="space-y-1.5 text-sm">
+          <div class="flex justify-between">
+            <dt class="text-gray-500">Availability</dt>
+            <dd class="text-gray-700 font-medium capitalize">{{.Availability}}</dd>
+          </div>
+          <div class="flex justify-between">
+            <dt class="text-gray-500">Database</dt>
+            <dd class="text-gray-700 font-medium capitalize">{{.Database}}</dd>
+          </div>
+          <div class="flex justify-between">
+            <dt class="text-gray-500">Namespace</dt>
+            <dd class="text-gray-700 font-mono text-xs">{{.Namespace}}</dd>
+          </div>
+        </dl>
+        {{if .ServiceURL}}
+        <div class="mt-3 pt-3 border-t border-gray-50">
+          <span class="text-xs text-indigo-500 truncate block">{{.ServiceURL}}</span>
+        </div>
+        {{end}}
+      </a>
+      {{end}}
+    </div>
+    {{else}}
+    <div class="text-center py-16">
+      <div class="inline-flex items-center justify-center w-14 h-14 bg-indigo-50 rounded-2xl mb-4">
+        <svg class="w-7 h-7 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+            d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-1.5 6M17 13l1.5 6M9 19h6"/>
+        </svg>
+      </div>
+      <h3 class="text-gray-700 font-medium mb-1">No shops yet</h3>
+      <p class="text-gray-400 text-sm mb-5">Create your first Kubernetes-managed store</p>
+      <a href="/shops/new"
+        class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors">
+        Create your first shop
+      </a>
+    </div>
+    {{end}}
+  </main>
+</body>
+</html>
