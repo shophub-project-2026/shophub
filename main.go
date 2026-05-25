@@ -23,6 +23,7 @@ import (
 	"github.com/shophub-project-2026/shophub/internal/server"
 	"github.com/shophub-project-2026/shophub/internal/server/middleware"
 	"github.com/shophub-project-2026/shophub/internal/shops"
+	"github.com/shophub-project-2026/shophub/internal/ui"
 )
 
 func main() {
@@ -79,6 +80,20 @@ func main() {
 
 	srv.HandleFunc("POST /auth/register", authHandler.Register)
 	srv.HandleFunc("POST /auth/login", authHandler.Login)
+
+	uiHandler := ui.NewHandler(authSvc, shopsRepo)
+	srv.HandleFunc("GET /login", uiHandler.LoginPage)
+	srv.HandleFunc("POST /login", uiHandler.LoginPost)
+	srv.HandleFunc("GET /register", uiHandler.RegisterPage)
+	srv.HandleFunc("POST /register", uiHandler.RegisterPost)
+	srv.HandleFunc("GET /", uiHandler.Root)
+	srv.HandleFunc("GET /logout", uiHandler.Logout)
+
+	uiJwt := middleware.JWTOrRedirect(authSvc.TokenParserFn(), "/login")
+	srv.Handle("GET /dashboard", uiJwt(http.HandlerFunc(uiHandler.Dashboard)))
+	srv.Handle("GET /shops/new", uiJwt(http.HandlerFunc(uiHandler.ShopNew)))
+	srv.Handle("POST /shops/new", uiJwt(http.HandlerFunc(uiHandler.ShopNewPost)))
+	srv.Handle("GET /shops/{name}", uiJwt(http.HandlerFunc(uiHandler.ShopDetail)))
 
 	srv.Handle("GET /shops", jwtMiddleware(http.HandlerFunc(shopsHandler.List)))
 	srv.Handle("POST /shops", jwtMiddleware(http.HandlerFunc(shopsHandler.Create)))
