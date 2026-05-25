@@ -66,7 +66,7 @@ func (sl *ShopList) DeepCopy() *ShopList {
 	}
 	out := new(ShopList)
 	*out = *sl
-	sl.ListMeta.DeepCopyInto(&out.ListMeta)
+	sl.DeepCopyInto(&out.ListMeta)
 	if sl.Items != nil {
 		out.Items = make([]Shop, len(sl.Items))
 		for i := range sl.Items {
