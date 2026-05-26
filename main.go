@@ -96,6 +96,7 @@ func main() {
 	srv.Handle("GET /shops/{name}", uiJwt(http.HandlerFunc(uiHandler.ShopDetail)))
 	srv.Handle("GET /shops/{name}/edit", uiJwt(http.HandlerFunc(uiHandler.ShopEdit)))
 	srv.Handle("POST /shops/{name}/edit", uiJwt(http.HandlerFunc(uiHandler.ShopEditPost)))
+	srv.Handle("POST /shops/{name}/delete", uiJwt(http.HandlerFunc(uiHandler.ShopDelete)))
 
 	srv.Handle("GET /shops", jwtMiddleware(http.HandlerFunc(shopsHandler.List)))
 	srv.Handle("POST /shops", jwtMiddleware(http.HandlerFunc(shopsHandler.Create)))

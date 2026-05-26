@@ -192,6 +192,16 @@ func (h *Handler) Root(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
 }
 
+func (h *Handler) ShopDelete(w http.ResponseWriter, r *http.Request) {
+	userID, _ := uuid.Parse(middleware.UserIDFromCtx(r.Context()))
+	name := r.PathValue("name")
+	if err := h.shopsRepo.Delete(r.Context(), userID, name); err != nil {
+		http.Error(w, "failed to delete shop", http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
+}
+
 func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     "token",
