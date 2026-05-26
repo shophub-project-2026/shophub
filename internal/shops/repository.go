@@ -174,6 +174,10 @@ func (r *k8sRepository) userNamespace(ctx context.Context, userID uuid.UUID, nam
 }
 
 func toView(s *Shop) ShopView {
+	url := s.Status.ServiceURL
+	if url == "" {
+		url = "http://" + s.Name + ".local"
+	}
 	return ShopView{
 		Name:          s.Name,
 		Namespace:     s.Namespace,
@@ -181,6 +185,6 @@ func toView(s *Shop) ShopView {
 		WalletAddress: s.Spec.WalletAddress,
 		Database:      s.Spec.Database,
 		Phase:         s.Status.Phase,
-		ServiceURL:    s.Status.ServiceURL,
+		ServiceURL:    url,
 	}
 }
