@@ -176,7 +176,10 @@ func (r *k8sRepository) userNamespace(ctx context.Context, userID uuid.UUID, nam
 func toView(s *Shop) ShopView {
 	url := s.Status.ServiceURL
 	if url == "" {
-		url = "http://" + s.Name + ".local"
+		// Mirror the host the shop-operator wires onto the per-shop Ingress
+		// (<name>.127.0.0.1.nip.io) so the Open shop button is usable from
+		// the moment the CRD lands, before the operator publishes status.
+		url = "http://" + s.Name + ".127.0.0.1.nip.io"
 	}
 	return ShopView{
 		Name:          s.Name,
