@@ -26,10 +26,11 @@ type Shop struct {
 }
 
 type ShopSpec struct {
-	Availability  string `json:"availability,omitempty"`
-	WalletAddress string `json:"walletAddress"`
-	Database      string `json:"database,omitempty"`
-	Image         string `json:"image,omitempty"`
+	Availability        string `json:"availability,omitempty"`
+	WalletAddress       string `json:"walletAddress"`
+	Database            string `json:"database,omitempty"`
+	Image               string `json:"image,omitempty"`
+	NotificationWebhook string `json:"notificationWebhook,omitempty"`
 }
 
 type ShopStatus struct {

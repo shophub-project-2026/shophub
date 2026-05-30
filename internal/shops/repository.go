@@ -82,9 +82,10 @@ func (r *k8sRepository) Create(ctx context.Context, userID uuid.UUID, in CreateI
 			Namespace: in.Namespace,
 		},
 		Spec: ShopSpec{
-			Availability:  in.Availability,
-			WalletAddress: in.WalletAddress,
-			Database:      in.Database,
+			Availability:        in.Availability,
+			WalletAddress:       in.WalletAddress,
+			Database:            in.Database,
+			NotificationWebhook: in.NotificationWebhook,
 		},
 	}
 
