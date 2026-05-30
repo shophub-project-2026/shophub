@@ -152,10 +152,11 @@ func (h *Handler) ShopNew(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) ShopNewPost(w http.ResponseWriter, r *http.Request) {
 	userID, _ := uuid.Parse(middleware.UserIDFromCtx(r.Context()))
 	if _, err := h.shopsRepo.Create(r.Context(), userID, shops.CreateInput{
-		Name:          r.FormValue("name"),
-		Availability:  r.FormValue("availability"),
-		WalletAddress: r.FormValue("walletAddress"),
-		Database:      r.FormValue("database"),
+		Name:                r.FormValue("name"),
+		Availability:        r.FormValue("availability"),
+		WalletAddress:       r.FormValue("walletAddress"),
+		Database:            r.FormValue("database"),
+		NotificationWebhook: r.FormValue("notificationWebhook"),
 	}); err != nil {
 		h.render(w, "shop_new.html", map[string]any{
 			"Email": middleware.EmailFromCtx(r.Context()),
