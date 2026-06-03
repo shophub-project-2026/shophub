@@ -15,12 +15,11 @@ type UserShop struct {
 }
 
 type CreateInput struct {
-	Name                string `json:"name"`
-	Availability        string `json:"availability"`
-	WalletAddress       string `json:"walletAddress"`
-	Database            string `json:"database"`
-	Namespace           string `json:"namespace"`
-	NotificationWebhook string `json:"notificationWebhook"`
+	Name          string `json:"name"`
+	Availability  string `json:"availability"`
+	WalletAddress string `json:"walletAddress"`
+	Database      string `json:"database"`
+	Namespace     string `json:"namespace"`
 }
 
 type UpdateInput struct {
