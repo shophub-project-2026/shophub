@@ -98,10 +98,13 @@ func (r *k8sRepository) Create(ctx context.Context, userID uuid.UUID, in CreateI
 		`INSERT INTO user_shops (user_id, shop_name, shop_namespace) VALUES ($1, $2, $3)`,
 		userID, in.Name, in.Namespace)
 	if err != nil {
-		_ = r.k8s.Delete(ctx, shop)
+		if delErr := r.k8s.Delete(ctx, shop); delErr != nil {
+			metrics.K8sOperationsTotal.WithLabelValues("delete", "error").Inc()
+		}
 		return nil, fmt.Errorf("register shop: %w", err)
 	}
 
+	metrics.ShopsTotal.WithLabelValues(userID.String()).Inc()
 	view := toView(shop)
 	return &view, nil
 }
@@ -158,6 +161,7 @@ func (r *k8sRepository) Delete(ctx context.Context, userID uuid.UUID, name strin
 	_, _ = r.pool.Exec(ctx,
 		`DELETE FROM user_shops WHERE user_id = $1 AND shop_name = $2 AND shop_namespace = $3`,
 		userID, name, ns)
+	metrics.ShopsTotal.WithLabelValues(userID.String()).Dec()
 	return nil
 }
 
