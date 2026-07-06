@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -90,6 +91,9 @@ func (r *k8sRepository) Create(ctx context.Context, userID uuid.UUID, in CreateI
 
 	if err := r.k8s.Create(ctx, shop); err != nil {
 		metrics.K8sOperationsTotal.WithLabelValues("create", "error").Inc()
+		if apierrors.IsAlreadyExists(err) {
+			return nil, ErrNameTaken
+		}
 		return nil, fmt.Errorf("create Shop CRD: %w", err)
 	}
 	metrics.K8sOperationsTotal.WithLabelValues("create", "success").Inc()
@@ -98,10 +102,13 @@ func (r *k8sRepository) Create(ctx context.Context, userID uuid.UUID, in CreateI
 		`INSERT INTO user_shops (user_id, shop_name, shop_namespace) VALUES ($1, $2, $3)`,
 		userID, in.Name, in.Namespace)
 	if err != nil {
-		_ = r.k8s.Delete(ctx, shop)
+		if delErr := r.k8s.Delete(ctx, shop); delErr != nil {
+			metrics.K8sOperationsTotal.WithLabelValues("delete", "error").Inc()
+		}
 		return nil, fmt.Errorf("register shop: %w", err)
 	}
 
+	metrics.ShopsTotal.WithLabelValues(userID.String()).Inc()
 	view := toView(shop)
 	return &view, nil
 }
@@ -158,6 +165,7 @@ func (r *k8sRepository) Delete(ctx context.Context, userID uuid.UUID, name strin
 	_, _ = r.pool.Exec(ctx,
 		`DELETE FROM user_shops WHERE user_id = $1 AND shop_name = $2 AND shop_namespace = $3`,
 		userID, name, ns)
+	metrics.ShopsTotal.WithLabelValues(userID.String()).Dec()
 	return nil
 }
 
@@ -174,6 +182,13 @@ func (r *k8sRepository) userNamespace(ctx context.Context, userID uuid.UUID, nam
 }
 
 func toView(s *Shop) ShopView {
+	url := s.Status.ServiceURL
+	if url == "" {
+		// Mirror the host the shop-operator wires onto the per-shop Ingress
+		// (<name>.127.0.0.1.nip.io) so the Open shop button is usable from
+		// the moment the CRD lands, before the operator publishes status.
+		url = "http://" + s.Name + ".127.0.0.1.nip.io"
+	}
 	return ShopView{
 		Name:          s.Name,
 		Namespace:     s.Namespace,
@@ -181,6 +196,6 @@ func toView(s *Shop) ShopView {
 		WalletAddress: s.Spec.WalletAddress,
 		Database:      s.Spec.Database,
 		Phase:         s.Status.Phase,
-		ServiceURL:    s.Status.ServiceURL,
+		ServiceURL:    url,
 	}
 }

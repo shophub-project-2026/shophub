@@ -2,6 +2,7 @@ package ui
 
 import (
 	"embed"
+	"errors"
 	"html/template"
 	"net/http"
 
@@ -157,9 +158,13 @@ func (h *Handler) ShopNewPost(w http.ResponseWriter, r *http.Request) {
 		WalletAddress: r.FormValue("walletAddress"),
 		Database:      r.FormValue("database"),
 	}); err != nil {
+		msg := "Failed to create shop: " + err.Error()
+		if errors.Is(err, shops.ErrNameTaken) {
+			msg = "Shop name is already taken. Choose a different name."
+		}
 		h.render(w, "shop_new.html", map[string]any{
 			"Email": middleware.EmailFromCtx(r.Context()),
-			"Error": "Failed to create shop: " + err.Error(),
+			"Error": msg,
 		})
 		return
 	}
@@ -187,6 +192,16 @@ func (h *Handler) Root(w http.ResponseWriter, r *http.Request) {
 	}
 	if _, err := h.authSvc.ParseToken(cookie.Value); err != nil {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+	http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
+}
+
+func (h *Handler) ShopDelete(w http.ResponseWriter, r *http.Request) {
+	userID, _ := uuid.Parse(middleware.UserIDFromCtx(r.Context()))
+	name := r.PathValue("name")
+	if err := h.shopsRepo.Delete(r.Context(), userID, name); err != nil {
+		http.Error(w, "failed to delete shop", http.StatusInternalServerError)
 		return
 	}
 	http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
