@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -90,6 +91,9 @@ func (r *k8sRepository) Create(ctx context.Context, userID uuid.UUID, in CreateI
 
 	if err := r.k8s.Create(ctx, shop); err != nil {
 		metrics.K8sOperationsTotal.WithLabelValues("create", "error").Inc()
+		if apierrors.IsAlreadyExists(err) {
+			return nil, ErrNameTaken
+		}
 		return nil, fmt.Errorf("create Shop CRD: %w", err)
 	}
 	metrics.K8sOperationsTotal.WithLabelValues("create", "success").Inc()
