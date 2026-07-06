@@ -2,6 +2,7 @@ package ui
 
 import (
 	"embed"
+	"errors"
 	"html/template"
 	"net/http"
 
@@ -157,9 +158,13 @@ func (h *Handler) ShopNewPost(w http.ResponseWriter, r *http.Request) {
 		WalletAddress: r.FormValue("walletAddress"),
 		Database:      r.FormValue("database"),
 	}); err != nil {
+		msg := "Failed to create shop: " + err.Error()
+		if errors.Is(err, shops.ErrNameTaken) {
+			msg = "Shop name is already taken. Choose a different name."
+		}
 		h.render(w, "shop_new.html", map[string]any{
 			"Email": middleware.EmailFromCtx(r.Context()),
-			"Error": "Failed to create shop: " + err.Error(),
+			"Error": msg,
 		})
 		return
 	}
